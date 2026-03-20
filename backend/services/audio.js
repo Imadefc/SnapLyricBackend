@@ -13,3 +13,13 @@ export const audioSlice = (pathinicio, pathfin, audio, inicio, duracion) => {
         })
         .run();
 }
+
+export const getAudioDuration = (audio) => {
+    ffmpeg.ffprobe(audio, (err, metadata) => {
+        if (err) {
+            console.log("Error al obtener la duración del audio: " + err.message);
+        } else {
+            console.log("Duración del audio: " + metadata.format.duration);
+        }
+    });
+}
