@@ -24,8 +24,11 @@ router.post("/audioSlice", upload.single("audio"), (req, res) => {
     }
     const audioPath = path.join("uploads/", audio.name);
     const audioSlicePath = path.join("uploads/", "audioSlice.mp3");
-    audioSlice("uploads/", "uploads/", audio, inicioInt, duracionInt);
-    res.send("Audio cortado exitosamente");
+    audioSlice(audioPath, audioSlicePath, inicioInt, duracionInt);
+    res.send({
+        message: "Audio cortado exitosamente",
+        audio: audioSlicePath
+    });
 });
 
 export default router;

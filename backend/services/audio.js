@@ -1,10 +1,10 @@
 import ffmpeg from "fluent-ffmpeg";
 
-export const audioSlice = (pathinicio, pathfin, audio, inicio, duracion) => {
-    ffmpeg(pathinicio + audio)
+export const audioSlice = (pathinicio, pathfin, inicio, duracion) => {
+    ffmpeg(pathinicio)
         .outputOptions(`-ss ${inicio}`)
         .outputOptions(`-t ${duracion}`)
-        .output(pathfin + audio)
+        .output(pathfin)
         .on("end", () => {
             console.log("Audio cortado exitosamente");
         })
