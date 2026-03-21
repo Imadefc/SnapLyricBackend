@@ -32,9 +32,11 @@ router.post("/audioSlice", upload.single("audio"), async (req, res) => {
     }
 
     await audioSlice(inputPath, outputPath, inicioInt, duracionInt);
-    res.send({
-        message: "Audio cortado exitosamente",
-        audio: outputPath
+    res.download(outputPath, 'recorte.mp3', (err) => {
+        if (err) {
+            console.error("Error al enviar el archivo:", err);
+            if (!res.headersSent) res.status(500).send("Error en la descarga");
+        }
     });
 });
 
