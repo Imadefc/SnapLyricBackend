@@ -12,7 +12,7 @@ router.post("/audioSlice", upload.single("audio"), async (req, res) => {
     const audio = req.file;
     let inicioInt = parseInt(inicio);
     let duracionInt = parseInt(duracion);
-    const duracionCancion = await getAudioDuration(audio);
+    const duracionCancion = await getAudioDuration(audio.path);
     if (!audio || !inicio || !duracion) {
         return res.status(400).send("Faltan datos");
     }
