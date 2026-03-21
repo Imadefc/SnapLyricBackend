@@ -20,7 +20,7 @@ router.post("/audioSlice", upload.single("audio"), async (req, res) => {
     const inputPath = audio.path
 
     const outputfileName = `slice-${Date.now()}.mp3`
-    const outputPath = path.join("../uploads/", outputfileName);
+    const outputPath = path.join("uploads/", outputfileName);
 
     if (inicioInt < 0 || duracionInt <= 0) {
         return res.status(400).send("Datos invalidos");
