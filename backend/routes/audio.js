@@ -12,22 +12,29 @@ router.post("/audioSlice", upload.single("audio"), async (req, res) => {
     const audio = req.file;
     let inicioInt = parseInt(inicio);
     let duracionInt = parseInt(duracion);
-    const duracionCancion = await getAudioDuration(audio.path);
+
     if (!audio || !inicio || !duracion) {
         return res.status(400).send("Faltan datos");
     }
+
+    const inputPath = audio.path
+
+    const outputfileName = `slice-${Date.now()}.mp3`
+    const outputPath = path.join("../uploads/", outputfileName);
+
     if (inicioInt < 0 || duracionInt <= 0) {
         return res.status(400).send("Datos invalidos");
     }
+
+    const duracionCancion = await getAudioDuration(inputPath);
     if (inicioInt + duracionInt > duracionCancion) {
         return res.status(400).send("Datos invalidos");
     }
-    const audioPath = path.join("uploads/", audio.name);
-    const audioSlicePath = path.join("uploads/", Date.now() + "_audioSlice.mp3");
-    await audioSlice(audioPath.path, audioSlicePath, inicioInt, duracionInt);
+
+    await audioSlice(inputPath, outputPath, inicioInt, duracionInt);
     res.send({
         message: "Audio cortado exitosamente",
-        audio: audioSlicePath
+        audio: outputPath
     });
 });
 
