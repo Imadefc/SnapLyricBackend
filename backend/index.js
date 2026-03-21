@@ -21,6 +21,16 @@ app.get("/", (req, res) => {
     res.send("Hello World!");
 });
 
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        status: 'error',
+        message: err.message,
+        code: err.code // Aquí verás si es 'ENOENT' (falta ffmpeg)
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
