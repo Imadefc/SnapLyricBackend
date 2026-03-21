@@ -7,12 +7,12 @@ import path from "path";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 //cortar audio
-router.post("/audioSlice", upload.single("audio"), (req, res) => {
+router.post("/audioSlice", upload.single("audio"), async (req, res) => {
     const { inicio, duracion } = req.body;
     const audio = req.file;
     let inicioInt = parseInt(inicio);
     let duracionInt = parseInt(duracion);
-    let duracionCancion = getAudioDuration(audio);
+    const duracionCancion = await getAudioDuration(audio);
     if (!audio || !inicio || !duracion) {
         return res.status(400).send("Faltan datos");
     }
@@ -23,8 +23,8 @@ router.post("/audioSlice", upload.single("audio"), (req, res) => {
         return res.status(400).send("Datos invalidos");
     }
     const audioPath = path.join("uploads/", audio.name);
-    const audioSlicePath = path.join("uploads/", "audioSlice.mp3");
-    audioSlice(audioPath, audioSlicePath, inicioInt, duracionInt);
+    const audioSlicePath = path.join("uploads/", Date.now() + "_audioSlice.mp3");
+    await audioSlice(audioPath.path, audioSlicePath, inicioInt, duracionInt);
     res.send({
         message: "Audio cortado exitosamente",
         audio: audioSlicePath

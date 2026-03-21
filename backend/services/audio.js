@@ -1,17 +1,20 @@
 import ffmpeg from "fluent-ffmpeg";
 
 export const audioSlice = (pathinicio, pathfin, inicio, duracion) => {
-    ffmpeg(pathinicio)
-        .setStartTime(inicio)
-        .setDuration(duracion)
-        .output(Date.now() + pathfin)
-        .on("end", () => {
-            console.log("Audio cortado exitosamente");
-        })
-        .on("error", (err) => {
-            console.log("Error al cortar el audio: " + err.message);
-        })
-        .run();
+    return new Promise((resolve, reject) => {
+        ffmpeg(pathinicio)
+            .setStartTime(inicio)
+            .setDuration(duracion)
+            .on("end", () => {
+                console.log("Audio cortado exitosamente");
+                resolve(pathfin);
+            })
+            .on("error", (err) => {
+                console.error("Error al cortar el audio: " + err.message);
+                reject(err);
+            })
+            .save(pathfin);
+    });
 }
 
 export const getAudioDuration = (audio) => {
