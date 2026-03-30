@@ -70,7 +70,7 @@ router.post("/audioDecompose", upload.fields([{ name: "audio", maxCount: 1 }, { 
     });
 });
 
-router.post("/:isImage", upload.fields([{ name: "audio", maxCount: 1 }, { name: "image", maxCount: 1 }]), async (req, res) => {
+router.post("/:isImage/:idioma", upload.fields([{ name: "audio", maxCount: 1 }, { name: "image", maxCount: 1 }]), async (req, res) => {
     try {
         // 1. Recogemos los archivos subidos
         const audioPath = req.files.audio[0].path;
@@ -79,6 +79,7 @@ router.post("/:isImage", upload.fields([{ name: "audio", maxCount: 1 }, { name: 
         // 🚨 EL ARREGLO MÁGICO 🚨
         // Comparamos el texto exacto. Si en la URL pone "true", es true. Todo lo demás será false.
         const isImage = req.params.isImage === "true";
+        const idioma = req.params.idioma;
 
         // Creamos rutas únicas para que los usuarios no se pisen los archivos
         const timestamp = Date.now();
@@ -87,7 +88,7 @@ router.post("/:isImage", upload.fields([{ name: "audio", maxCount: 1 }, { name: 
 
         // --- FASE 1: EL CEREBRO ---
         console.log("🧠 1. Escuchando la canción con IA...");
-        const transcripcion = await obtenerLetrasIA(audioPath);
+        const transcripcion = await obtenerLetrasIA(audioPath, idioma);
 
         // --- FASE 2: EL PINTOR ---
         console.log("🎨 2. Diseñando el archivo de subtítulos karaoke...");

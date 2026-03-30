@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-export const obtenerLetrasIA = async (audioPath) => {
+export const obtenerLetrasIA = async (audioPath, idioma = "multi") => {
     console.log("🧠 Enviando audio a Deepgram (Modo Nativo HTTP)...");
 
     // 1. Leemos el archivo físico
@@ -11,7 +11,7 @@ export const obtenerLetrasIA = async (audioPath) => {
 
     try {
         // 2. Hacemos la petición directa a la API (Cero librerías externas)
-        const response = await fetch("https://api.deepgram.com/v1/listen?model=nova-2&language=es&smart_format=true", {
+        const response = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&language=${idioma}&smart_format=true`, {
             method: "POST",
             headers: {
                 "Authorization": `Token ${DEEPGRAM_API_KEY}`,
