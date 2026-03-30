@@ -2,6 +2,14 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import audioRoutes from "./routes/audio.js";
+import transcribeRoutes from "./routes/transcribre.js";
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from '@ffmpeg-installer/ffmpeg';
+import ffprobePath from '@ffprobe-installer/ffprobe';
+
+ffmpeg.setFfmpegPath(ffmpegPath.path);
+ffmpeg.setFfprobePath(ffprobePath.path);
+
 import fs from "fs";
 if (!fs.existsSync("uploads")) {
     fs.mkdirSync("uploads");
@@ -15,6 +23,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use("/audio", audioRoutes);
+app.use("/lyrics", transcribeRoutes);
 app.use('/uploads', express.static('uploads'));
 
 app.get("/", (req, res) => {

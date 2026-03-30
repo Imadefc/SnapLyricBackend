@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { audioSlice, getAudioDuration } from "../services/audio.js";
+import { audioSlice, getAudioDuration, audioDecompose, audioSplit } from "../services/audio.js";
 import fs from "fs";
 import path from "path";
 
@@ -33,6 +33,34 @@ router.post("/audioSlice", upload.single("audio"), async (req, res) => {
 
     await audioSlice(inputPath, outputPath, inicioInt, duracionInt);
     res.download(outputPath, 'recorte.mp3', (err) => {
+        if (err) {
+            console.error("Error al enviar el archivo:", err);
+            if (!res.headersSent) res.status(500).send("Error en la descarga");
+        }
+    });
+});
+//descomponer audio en  7 partes
+router.post("/audioDecompose", upload.fields([{ name: "audio", maxCount: 1 }, { name: "image", maxCount: 1 }]), async (req, res) => {
+    const files = req.files;
+
+    if (!files || !files['audio'] || !files['image']) {
+        return res.status(400).json({
+            error: "Faltan archivos. Debes enviar 'audio' e 'image'."
+        });
+    }
+
+    const audioFile = req.files['audio'][0];
+    const imageFile = req.files['image'][0];
+
+
+    const audioPath = audioFile.path;
+    const imagePath = imageFile.path;
+
+    const outputfileName = `visualizacion-${Date.now()}.mp4`;
+
+    const outputPath = path.join("uploads/", outputfileName);
+    await audioSplit(audioPath, imagePath, outputPath, true, null);
+    res.download(outputPath, 'visualizacion.mp4', (err) => {
         if (err) {
             console.error("Error al enviar el archivo:", err);
             if (!res.headersSent) res.status(500).send("Error en la descarga");
