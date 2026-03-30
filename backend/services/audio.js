@@ -1,40 +1,49 @@
-import ffmpeg from "fluent-ffmpeg";
-import path from "path";
-import { obtenerLetrasIA } from "./transcribeServices.js";
+import ffmpeg from 'fluent-ffmpeg';
 
-export const audioSlice = (pathinicio, pathfin, inicio, duracion) => {
+export const audioSplit = (audioPath, visualPath, outputPath, assPath, isImage) => {
     return new Promise((resolve, reject) => {
-        ffmpeg(pathinicio)
-            .setStartTime(inicio)
-            .setDuration(duracion)
-            .on("end", () => {
-                console.log("Audio cortado exitosamente");
-                resolve(pathfin);
-            })
-            .on("error", (err) => {
-                console.error("Error al cortar el audio: " + err.message);
-                reject(err);
-            })
-            .save(pathfin);
-    });
-}
+        const escapedAssPath = assPath.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-export const getAudioDuration = (audio) => {
-    return new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(audio, (err, metadata) => {
-            if (err) return reject(err);
-            resolve(metadata.format.duration);
-        });
-    });
-}
+        // 1. Preparamos el fondo (tu foto o video) para que ocupe TODA la pantalla [bg]
+        const visualFilter = isImage
+            ? "[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280[bg]"
+            : "[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,fps=30[bg]";
 
-export const audioDecompose = (audioPath, imagepath, outputPath) => {
-    return new Promise((resolve, reject) => {
-        ffmpeg()
-            .input(imagepath)
-            .inputOptions(['-loop 1', '-t 3'])
+        const filterStr = [
+            visualFilter,
+
+            // 2. Extraemos el audio para las ondas
+            "[1:a]asplit=2[a_vis][a_out]",
+
+            // 3. Creamos el ecualizador más "bajito" (250px de alto en lugar de 1280)
+            "[a_vis]showfreqs=s=720x250:mode=bar:colors=white:fscale=log[vis_raw]",
+
+            // 4. Le quitamos el fondo negro para que solo se vean los rayos blancos
+            "[vis_raw]colorkey=black:0.1:0.1[vis_transparente]",
+
+            // 5. 🚨 LA MAGIA DEL PIE DE PÁGINA 🚨
+            // Ponemos las ondas SOBRE el fondo. "0:H-h" significa "Pegado a la izquierda (0) y pegado abajo del todo (H-h)"
+            "[bg][vis_transparente]overlay=0:H-h:shortest=1[video_combinado]",
+
+            // 6. Planchamos los subtítulos (que ya están programados para salir en el centro)
+            `[video_combinado]subtitles=filename='${escapedAssPath}'[v_final]`
+        ].join(';');
+
+        let command = ffmpeg();
+
+        if (isImage) {
+            command = command.input(visualPath).inputOptions(['-loop 1']);
+        } else {
+            command = command.input(visualPath);
+        }
+
+        command
             .input(audioPath)
+            .complexFilter(filterStr)
             .outputOptions([
+                '-y', // Sobreescribir sin preguntar
+                '-map [v_final]',
+                '-map [a_out]',
                 '-c:v libx264',
                 '-preset ultrafast',
                 '-pix_fmt yuv420p',
@@ -42,107 +51,19 @@ export const audioDecompose = (audioPath, imagepath, outputPath) => {
                 '-shortest'
             ])
             .on('start', (cmd) => {
-                console.log("🚀 PASO 1 - Iniciando FFmpeg Básico...");
-                console.log("Comando:", cmd);
+                console.log(`🚀 Motor FFmpeg: Diseño TikTok (Ondas al pie de la pantalla)`);
             })
             .on('progress', (p) => {
-                console.log(`⏳ Procesando: ${p.timemark}`);
+                if (p.timemark) console.log(`⏳ Renderizando: ${p.timemark}`);
             })
             .on('end', () => {
-                console.log("✅ ¡PASO 1 SUPERADO! Video generado.");
+                console.log("✅ ¡VIDEO FINAL COMPLETADO CON ÉXITO!");
                 resolve(outputPath);
             })
             .on('error', (err) => {
-                console.error("❌ Error en el Paso 1:", err.message);
+                console.error("❌ Error de FFmpeg:", err.message);
                 reject(err);
             })
             .save(outputPath);
     });
-}
-
-export const audioSplit = (audioPath, imagePath, outputPath, complexFilter, duration) => {
-    return new Promise((resolve, reject) => {
-        let duracion;
-        if (duration) {
-            duracion = duration;
-        } else {
-            duracion = 10;
-        }
-
-        const transcripcion = generarTranscripcionLocal(audioPath);
-
-        console.log(transcripcion);
-
-        if (complexFilter) {
-            const assPath = path.resolve('uploads', 'letras_animadas.ass');
-            const escapedAssPath = assPath.replace(/\\/g, '/').replace(/:/g, '\\:');
-            const filterStr = [
-                "[0:v]scale=720:1280[bg]",
-                "[1:a]asplit=2[a_vis][a_out]",
-                "[a_vis]showwaves=s=720x200:mode=line:colors=white[vis_raw]",
-                "[vis_raw]colorkey=black:0.1:0.1[vis]",
-                "[bg][vis]overlay=0:(H-h)[temp_video]",
-
-                // 2. Quitamos el force_style, el archivo .ass ya sabe cómo debe verse y animarse
-                `[temp_video]subtitles='${escapedAssPath}'[v_final]`
-            ].join(';');
-            ffmpeg()
-                .input(imagePath)
-                .inputOptions(['-loop 1', '-t', duracion])
-                .input(audioPath)
-
-                // Le pasamos nuestro filtro simple
-                .complexFilter(filterStr)
-
-                .outputOptions([
-                    '-map [v_final]',
-                    '-map [a_out]',
-                    '-c:v libx264',
-                    '-preset ultrafast',
-                    '-pix_fmt yuv420p',
-                    '-c:a aac',
-                    '-shortest'
-                ])
-                .on('start', (cmd) => console.log("🚀 PASO 2 - Iniciando Filtros Básicos..."))
-                .on('progress', (p) => console.log(`⏳ Procesando: ${p.timemark}`))
-                .on('end', () => {
-                    console.log("✅ ¡PASO 2 SUPERADO! Filtros funcionando.");
-                    resolve(outputPath);
-                })
-                .on('error', (err) => {
-                    console.error("❌ Error en el Paso 2:", err.message);
-                    reject(err);
-                })
-                .save(outputPath);
-        } else {
-            ffmpeg()
-                .input(imagePath)
-                .inputOptions(['-loop 1', '-t', duracion])
-                .input(audioPath)
-
-
-                .outputOptions([
-                    '-c:v libx264',
-                    '-preset ultrafast',
-                    '-pix_fmt yuv420p',
-                    '-c:a aac',
-                    '-shortest'
-                ])
-                .on('start', (cmd) => console.log("🚀 PASO 2 - Iniciando Filtros Básicos..."))
-                .on('progress', (p) => console.log(`⏳ Procesando: ${p.timemark}`))
-                .on('end', () => {
-                    console.log("✅ ¡PASO 2 SUPERADO! Filtros funcionando.");
-                    resolve(outputPath);
-                })
-                .on('error', (err) => {
-                    console.error("❌ Error en el Paso 2:", err.message);
-                    reject(err);
-                })
-                .save(outputPath);
-        }
-
-
-
-    });
 };
-

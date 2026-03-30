@@ -39,7 +39,6 @@ export const obtenerLetrasIA = async (audioPath) => {
         }));
 
         console.log("✅ ¡Deepgram devolvió las letras con éxito!");
-        console.log(palabrasFormateadas);
         return palabrasFormateadas;
 
     } catch (err) {
